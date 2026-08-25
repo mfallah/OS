@@ -2,11 +2,15 @@
 """Personal OS reference server: dependency-free API + static app."""
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 import json, uuid, datetime
+from personal_os_core import PersonalOS, Orchestrator, WorkflowEngine
 
 ROOT = Path(__file__).parent
 DATA = ROOT / "data.json"
+CORE = PersonalOS(ROOT / "personal_os.sqlite3")
+ORCHESTRATOR = Orchestrator(CORE)
+WORKFLOWS = WorkflowEngine(CORE)
 
 def now(): return datetime.datetime.now(datetime.timezone.utc).isoformat()
 def seed():
@@ -42,11 +46,23 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         path=urlparse(self.path).path
         if path == "/api/state": self.json_headers(); self.wfile.write(json.dumps(load()).encode()); return
-        if path == "/api/health": self.json_headers(); self.wfile.write(json.dumps({"status":"operational","time":now(),"queue":"healthy"}).encode()); return
+        if path == "/api/health": self.json_headers(); self.wfile.write(json.dumps({"status":"operational","time":now(),"queue":"healthy","core":"online"}).encode()); return
+        if path == "/api/core/entities": self.json_headers(); self.wfile.write(json.dumps(CORE.list(parse_qs(urlparse(self.path).query).get("kind",[None])[0])).encode()); return
+        if path == "/api/core/load": self.json_headers(); self.wfile.write(json.dumps(CORE.cognitive_load()).encode()); return
+        if path == "/api/core/search": self.json_headers(); self.wfile.write(json.dumps(CORE.search(parse_qs(urlparse(self.path).query).get("q",[""])[0])).encode()); return
+        if path == "/api/core/memories": self.json_headers(); self.wfile.write(json.dumps(CORE.memories()).encode()); return
         return super().do_GET()
     def do_POST(self):
         path=urlparse(self.path).path; length=int(self.headers.get("Content-Length",0)); body=json.loads(self.rfile.read(length) or "{}")
         db=load()
+        if path=="/api/core/entities":
+            item=CORE.create(body.pop("kind","note"), body); self.json_headers(201); self.wfile.write(json.dumps(item).encode()); return
+        if path=="/api/core/memory":
+            item=CORE.remember(body.pop("category","temporary"), body.pop("content",""), **body); self.json_headers(201); self.wfile.write(json.dumps(item).encode()); return
+        if path=="/api/core/plan":
+            item=ORCHESTRATOR.plan(body.get("request", "")); self.json_headers(); self.wfile.write(json.dumps(item).encode()); return
+        if path=="/api/core/workflows/run":
+            item=WORKFLOWS.run(body, approved=bool(body.get("approved"))); self.json_headers(); self.wfile.write(json.dumps(item).encode()); return
         if path=="/api/capture":
             entity=body.get("entity","task"); item={"id":uuid.uuid4().hex[:8],"createdAt":now(),"status":"open",**body}
             collection={"task":"tasks","idea":"ideas","note":"notes"}.get(entity,"tasks"); db.setdefault(collection,[]).append(item)

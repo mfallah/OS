@@ -4,6 +4,8 @@ This repository contains a dependency-free, runnable vertical slice of the Perso
 
 ## Current implementation
 
+The core is now implemented in `personal_os_core.py` with a SQLite-backed domain layer. It provides typed boundaries for entities, graph edges, governed memories, events, audit records, permissions, context retrieval, cognitive-load scoring, orchestration plans and approval-aware workflows. The HTTP service exposes these through `/api/core/*`; the Vercel functions provide the same browser-safe API surface for deployment.
+
 - **Command Center:** answers “What matters now?” with an objective, priorities, capacity, cognitive load, insights and relationship attention.
 - **Entity views:** projects, tasks/open loops, relationships, idea garden, research, reviews, governed memory, agents/skills and system control.
 - **Quick capture:** task, idea or note capture from any view; persisted through the API and event logged.
