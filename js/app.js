@@ -88,7 +88,7 @@ function render() {
   const d = store.data;
   const reload = () => loadState();
   const renderers = {
-    command: () => renderCommand(root, d),
+    command: () => renderCommand(root, d, reload),
     tasks: () => renderTasks(root, d, reload),
     projects: () => renderProjects(root, d, reload),
     people: () => renderPeople(root, d, reload),

@@ -140,7 +140,7 @@ body.dark .mark{background:var(--ink);color:var(--bg)}
 /* ---------------------------------------------------------------- cards */
 .grid{display:grid;grid-template-columns:1fr;gap:12px}
 .card{background:var(--panel);border:1px solid var(--line);padding:16px;min-width:0}
-.card.full{grid-column:1/-1}
+.card.full,.grid>.full{grid-column:1/-1}
 .card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
   margin-bottom:12px;flex-wrap:wrap}
 .card h2{font-size:14.5px;font-weight:600}
