@@ -152,7 +152,8 @@ class WorkflowEngine:
             approval = self.permissions.request_approval(
                 f"workflow:{wf.get('name')}", risk=policy["risk"],
                 permission=policy["permission"], reason=policy["reason"],
-                payload={"workflow_id": wf["id"], "name": wf.get("name"),
+                payload={"approval_kind": "workflow", "reference": workflow_id,
+                         "workflow_id": wf["id"], "name": wf.get("name"),
                          "steps": wf.get("steps")},
                 context={"actor": actor})
             self._record_run(wf, "approval_required", [], idempotency_key)

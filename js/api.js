@@ -8,10 +8,17 @@ export class ApiError extends Error {
 
 export const offline = { active: false };
 
+function mutationKey() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `web-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 async function request(path, { method = 'GET', body, idempotencyKey } = {}) {
   const headers = { Accept: 'application/json' };
   if (body) headers['Content-Type'] = 'application/json';
-  if (idempotencyKey) headers['X-Idempotency-Key'] = idempotencyKey;
+  if (method !== 'GET' && method !== 'OPTIONS') {
+    headers['X-Idempotency-Key'] = idempotencyKey || mutationKey();
+  }
   let res;
   try {
     res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
@@ -25,7 +32,14 @@ async function request(path, { method = 'GET', body, idempotencyKey } = {}) {
     offline.active = false;
     return data;
   }
-  const err = data && data.error ? data.error : { code: 'http_' + res.status, message: res.statusText };
+  let err = data && data.error ? data.error : { code: 'http_' + res.status, message: res.statusText };
+  if (res.status === 404 && path.startsWith('/api/') && !data?.error) {
+    err = {
+      code: 'api_route_not_found',
+      message: 'The API route was not deployed. On Vercel, verify that /api/* rewrites to /api/index (without .py).',
+      setup: 'Redeploy the current repository configuration, then check /api/health.',
+    };
+  }
   throw new ApiError(res.status, err.code || 'error', err.message || 'Request failed', err.setup);
 }
 

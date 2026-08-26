@@ -83,6 +83,15 @@ class GraphTests(unittest.TestCase):
         with self.assertRaises(GraphError):
             self.os.graph.link(a["id"], "related_to", a["id"])
 
+    def test_soft_delete_restore_preserves_graph(self):
+        a = self.os.entities.create("task", {"title": "A"})
+        b = self.os.entities.create("project", {"name": "B"})
+        self.os.graph.link(a["id"], "belongs_to", b["id"])
+        self.os.entities.delete(b["id"])
+        self.assertEqual(self.os.graph.neighbors(a["id"]), [])
+        self.os.entities.restore(b["id"])
+        self.assertEqual(len(self.os.graph.neighbors(a["id"])), 1)
+
 
 class MemoryTests(unittest.TestCase):
     def setUp(self):
@@ -393,14 +402,35 @@ class OwnershipTests(unittest.TestCase):
         self.os.close()
 
     def test_export_restore_roundtrip(self):
+        self.os.memory_store.disable_category("pattern")
+        source = self.os.entities.create("task", {"title": "Export source"})
+        target = self.os.entities.create("project", {"name": "Export target"})
+        self.os.graph.link(source["id"], "belongs_to", target["id"])
         dump = self.os.ownership.export_all()
+        original_dump = json.loads(json.dumps(dump))
         self.assertEqual(dump["format"], "myos.export.v1")
         other = fresh_app()
         try:
             result = other.ownership.restore(dump)
             self.assertGreater(result["restored_entities"], 0)
+            self.assertGreater(result["restored_edges"], 0)
+            self.assertIsNotNone(other.entities.get(source["id"]))
+            self.assertTrue(other.graph.neighbors(source["id"]))
+            self.assertIn("pattern", other.memory_store.disabled_categories())
+            self.assertEqual(dump, original_dump, "restore must not mutate its input")
         finally:
             other.close()
+
+
+class DeploymentConfigTests(unittest.TestCase):
+    def test_vercel_clean_url_rewrite_targets_extensionless_function(self):
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "vercel.json")
+        with open(config_path, encoding="utf-8") as handle:
+            config = json.load(handle)
+        destinations = [rule["destination"] for rule in config.get("rewrites", [])
+                        if rule.get("source") == "/api/:path*"]
+        self.assertEqual(destinations, ["/api/index"])
+        self.assertNotIn(".py", destinations[0])
 
 
 class ApiTests(unittest.TestCase):
@@ -442,6 +472,32 @@ class ApiTests(unittest.TestCase):
         status, updated = self.call("POST", f"/api/core/entities/{task['id']}",
                                     {"status": "done"})
         self.assertEqual(updated["status"], "done")
+
+    def test_idempotency_header_deduplicates_entity_create(self):
+        headers = {"x-idempotency-key": "api-create-once"}
+        status, first = self.call("POST", "/api/core/entities",
+                                  {"kind": "task", "title": "First"}, headers=headers)
+        status, second = self.call("POST", "/api/core/entities",
+                                   {"kind": "task", "title": "Retry"}, headers=headers)
+        self.assertEqual(first["id"], second["id"])
+        self.assertNotIn("idempotency_key", first)
+
+    def test_client_approved_boolean_cannot_bypass_workflow_approval(self):
+        status, result = self.call("POST", "/api/core/workflows/run",
+                                   {"name": "relationship-follow-up", "approved": True})
+        self.assertEqual(status, 202)
+        self.assertEqual(result["status"], "approval_required")
+
+    def test_orchestrator_approval_decision_executes_request(self):
+        status, result = self.call("POST", "/api/core/plan",
+                                   {"message": "send an email to the team",
+                                    "approved": True})
+        self.assertEqual(status, 202)
+        approval_id = result["approval"]["id"]
+        status, decided = self.call("POST", f"/api/core/approvals/{approval_id}/decide",
+                                    {"approve": True})
+        self.assertEqual(status, 200)
+        self.assertEqual(decided["execution"]["status"], "ok")
 
     def test_delete_requires_confirmation(self):
         _, task = self.call("POST", "/api/core/entities", {"kind": "task", "title": "bye"})

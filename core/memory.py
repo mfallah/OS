@@ -92,6 +92,7 @@ class MemoryStore:
         self.db.execute(
             "UPDATE memories SET status='active', confidence=MAX(confidence, 0.9),"
             " updated_at=? WHERE id=?", (iso(), memory_id))
+        self.events.emit("memory.confirmed", {"memory_id": memory_id}, actor=actor)
         return self.get(memory_id)
 
     def delete(self, memory_id: str, *, actor: str = "user") -> dict:
@@ -109,12 +110,14 @@ class MemoryStore:
         self.events.emit("memory.cleared", {}, actor=actor)
         return {"cleared": True}
 
-    def disable_category(self, category: str) -> dict:
+    def disable_category(self, category: str, *, actor: str = "user") -> dict:
         self._set_category_pref(category, False)
+        self.events.emit("memory.category_disabled", {"category": category}, actor=actor)
         return {"category": category, "enabled": False}
 
-    def enable_category(self, category: str) -> dict:
+    def enable_category(self, category: str, *, actor: str = "user") -> dict:
         self._set_category_pref(category, True)
+        self.events.emit("memory.category_enabled", {"category": category}, actor=actor)
         return {"category": category, "enabled": True}
 
     def disabled_categories(self) -> list[str]:

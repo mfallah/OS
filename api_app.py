@@ -84,6 +84,20 @@ def _require_confirm(params: dict):
     return None
 
 
+def _header(headers: dict, name: str) -> str | None:
+    """Read a request header case-insensitively across local/serverless hosts."""
+    wanted = name.lower()
+    return next((str(value) for key, value in headers.items()
+                 if key.lower() == wanted), None)
+
+
+def _idempotency(body: dict, headers: dict) -> str | None:
+    key = (_header(headers, "X-Idempotency-Key") or body.get("idempotency_key") or "").strip()
+    if len(key) > 200:
+        raise ValueError("X-Idempotency-Key must be at most 200 characters")
+    return key or None
+
+
 # ================================================================ endpoints
 # ------------------------------------------------------------- system/health
 @route("GET", r"/api/health")
@@ -124,8 +138,9 @@ def capture(app, params, body, headers):
         return bad_request("capture requires 'text'")
     result = app.capture_service.capture(
         text, entity=body.get("entity"), actor="user",
-        extra={k: v for k, v in body.items() if k not in {"text", "title", "entity"}},
-        idempotency_key=body.get("idempotency_key"))
+        extra={k: v for k, v in body.items()
+               if k not in {"text", "title", "entity", "idempotency_key"}},
+        idempotency_key=_idempotency(body, headers))
     return ok(result, status=201)
 
 
@@ -201,9 +216,11 @@ def entities_create(app, params, body, headers):
     kind = body.pop("kind", None)
     if not kind:
         return bad_request("provide a 'kind' field")
+    idempotency_key = _idempotency(body, headers)
+    body.pop("idempotency_key", None)
     try:
         item = app.entities.create(kind.lower(), body, actor="user",
-                                   idempotency_key=body.get("idempotency_key"))
+                                   idempotency_key=idempotency_key)
     except ValidationError as exc:
         return bad_request(str(exc), "unknown_kind")
     return ok(item, status=201)
@@ -377,8 +394,10 @@ def orchestrate(app, params, body, headers):
     message = (body.get("message") or body.get("request") or "").strip()
     if not message:
         return bad_request("provide 'message'")
+    # Approval is deliberately completed only through /approvals/{id}/decide.
+    # Never trust a caller-controlled boolean as evidence of user consent.
     result = app.orchestrator.handle(message, focal_entity=body.get("focal_entity"),
-                                     actor="user", approved=bool(body.get("approved")))
+                                     actor="user", approved=False)
     status = 200 if result.get("status") == "ok" else 202
     return status, result
 
@@ -520,15 +539,22 @@ def tools_list(app, params, body, headers):
 
 @route("POST", r"/api/core/tools/(?P<name>[\w-]+)/execute")
 def tools_execute(app, params, body, headers, name):
+    operation = body.get("operation", "read")
     try:
-        result = app.tools.execute(name, body.get("operation", "read"),
-                                   body.get("params", {}), actor="user",
-                                   approved=bool(body.get("approved", False)),
-                                   idempotency_key=body.get("idempotency_key"))
+        result = app.tools.execute(name, operation, body.get("params", {}), actor="user",
+                                   approved=False,
+                                   idempotency_key=_idempotency(body, headers))
     except KeyError:
         return not_found(f"tool {name}")
     if not result.get("ok") and result.get("policy") and not result["policy"]["allowed"]:
-        return 403, result
+        approval = app.permissions.request_approval(
+            f"tool:{name}.{operation}", risk=result["policy"]["risk"],
+            permission=result["policy"]["permission"], reason=result["policy"]["reason"],
+            payload={"approval_kind": "tool", "reference": f"{name}.{operation}",
+                     "tool": name, "operation": operation,
+                     "params": body.get("params", {}),
+                     "idempotency_key": _idempotency(body, headers)})
+        return 202, {**result, "status": "approval_required", "approval": approval}
     return ok(result)
 
 
@@ -542,15 +568,24 @@ def mcp_register(app, params, body, headers):
 
 @route("POST", r"/api/core/mcp/execute")
 def mcp_execute(app, params, body, headers):
+    server, tool = body.get("server", ""), body.get("tool", "")
+    reference = f"{server}.{tool}"
     try:
-        result = app.tools.execute_mcp(body.get("server", ""), body.get("tool", ""),
-                                       body.get("params", {}), actor="user",
-                                       approved=bool(body.get("approved")),
-                                       idempotency_key=body.get("idempotency_key"))
+        result = app.tools.execute_mcp(server, tool, body.get("params", {}),
+                                       actor="user", approved=False,
+                                       idempotency_key=_idempotency(body, headers))
     except KeyError as exc:
         return not_found(str(exc))
     if not result.get("ok"):
-        return 403, result
+        policy = result.get("policy") or {}
+        approval = app.permissions.request_approval(
+            f"mcp:{reference}", risk=policy.get("risk", 2),
+            permission=policy.get("permission", "WRITE_DATA"),
+            reason=policy.get("reason", "external MCP execution requires approval"),
+            payload={"approval_kind": "mcp", "reference": reference,
+                     "server": server, "tool": tool, "params": body.get("params", {}),
+                     "idempotency_key": _idempotency(body, headers)})
+        return 202, {**result, "status": "approval_required", "approval": approval}
     return ok(result)
 
 
@@ -574,9 +609,9 @@ def workflows_run(app, params, body, headers):
     if not workflow_id:
         return bad_request("provide workflow 'id' or 'name'")
     try:
-        result = app.workflows.run(workflow_id, approved=bool(body.get("approved")),
+        result = app.workflows.run(workflow_id, approved=False,
                                    actor="user", approval_id=body.get("approval_id"),
-                                   idempotency_key=body.get("idempotency_key"))
+                                   idempotency_key=_idempotency(body, headers))
     except KeyError:
         return not_found(f"workflow {workflow_id}")
     status = 202 if result.get("status") == "approval_required" else 200
@@ -591,24 +626,39 @@ def approvals_list(app, params, body, headers):
 
 @route("POST", r"/api/core/approvals/(?P<approval_id>[\w-]+)/decide")
 def approvals_decide(app, params, body, headers, approval_id):
-    approve = bool(body.get("approve", body.get("approved", False)))
+    approve = body.get("approve", body.get("approved", False)) is True
     try:
         decided = app.permissions.decide(approval_id, approve, actor="user")
     except KeyError:
         return not_found(f"approval {approval_id}")
     except ValueError as exc:
         return bad_request(str(exc))
-    rerun = None
+    execution = None
     if approve:
         payload = decided.get("payload") or {}
-        if payload.get("workflow_id") or payload.get("name"):
-            ref = payload.get("workflow_id") or payload.get("name")
-            try:
-                rerun = app.workflows.run(ref, approved=True, actor="user",
-                                          approval_id=decided["id"])
-            except KeyError:
-                rerun = None
-    return ok({"approval": decided, "execution": rerun})
+        kind = payload.get("approval_kind")
+        try:
+            if kind == "workflow" or payload.get("workflow_id") or payload.get("name"):
+                ref = payload.get("workflow_id") or payload.get("name")
+                execution = app.workflows.run(ref, approved=True, actor="user",
+                                              approval_id=decided["id"])
+            elif kind == "orchestrator":
+                execution = app.orchestrator.handle(
+                    payload.get("message", ""), focal_entity=payload.get("focal_entity"),
+                    actor="user", approved=True)
+            elif kind == "tool":
+                execution = app.tools.execute(
+                    payload.get("tool", ""), payload.get("operation", "read"),
+                    payload.get("params", {}), actor="user", approved=True,
+                    idempotency_key=payload.get("idempotency_key"))
+            elif kind == "mcp":
+                execution = app.tools.execute_mcp(
+                    payload.get("server", ""), payload.get("tool", ""),
+                    payload.get("params", {}), actor="user", approved=True,
+                    idempotency_key=payload.get("idempotency_key"))
+        except KeyError:
+            execution = None
+    return ok({"approval": decided, "execution": execution})
 
 
 # ------------------------------------------------------------ audit / events
