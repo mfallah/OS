@@ -237,9 +237,9 @@ function closeSidebar() {
 function bindChrome() {
   $('#theme').onclick = () => {
     document.body.classList.toggle('dark');
-    localStorage.setItem('ourex.theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    localStorage.setItem('myos.theme', document.body.classList.contains('dark') ? 'dark' : 'light');
   };
-  if (localStorage.getItem('ourex.theme') === 'dark') document.body.classList.add('dark');
+  if (localStorage.getItem('myos.theme') === 'dark') document.body.classList.add('dark');
   $('#bellBtn').onclick = () => go('notifications');
   $('#fabCapture').onclick = openCapture;
   const hour = new Date().getHours();

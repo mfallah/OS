@@ -352,7 +352,7 @@ class SkillAgentTests(unittest.TestCase):
     def test_skill_share_portable(self):
         skill = [s for s in self.os.skills.list()][0]
         share = self.os.skills.share(skill["id"])
-        self.assertEqual(share["format"], "ourex.skill.v1")
+        self.assertEqual(share["format"], "myos.skill.v1")
         self.assertNotIn("created_at", share["skill"])
 
 
@@ -394,7 +394,7 @@ class OwnershipTests(unittest.TestCase):
 
     def test_export_restore_roundtrip(self):
         dump = self.os.ownership.export_all()
-        self.assertEqual(dump["format"], "ourex.export.v1")
+        self.assertEqual(dump["format"], "myos.export.v1")
         other = fresh_app()
         try:
             result = other.ownership.restore(dump)

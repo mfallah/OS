@@ -171,7 +171,7 @@ function changesCard(d) {
 
 function askCard() {
   return `<section class="card span-2">
-    <div class="card-head"><div><div class="eyebrow">ASK OUREX</div>
+    <div class="card-head"><div><div class="eyebrow">ASK MYOS</div>
       <h2 style="margin-top:6px">Conversation through the real orchestrator</h2></div></div>
     <form id="askForm" style="display:flex;gap:8px;flex-wrap:wrap">
       <input id="askInput" style="flex:1;min-width:200px;min-height:44px;border:1px solid var(--line);border-radius:9px;padding:0 14px"

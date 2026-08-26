@@ -19,7 +19,7 @@ class DataOwnership:
         events = self.events.list(limit=10_000)
         prefs = {r["key"]: loads(r["value"]) for r in
                  self.db.query("SELECT * FROM preferences")}
-        export = {"format": "ourex.export.v1", "exported_at": iso(),
+        export = {"format": "myos.export.v1", "exported_at": iso(),
                   "entities": entities, "memories": memories,
                   "edges": [dict(e) for e in edges], "events": events,
                   "preferences": prefs,
@@ -34,7 +34,7 @@ class DataOwnership:
         return backup
 
     def restore(self, export: dict, *, actor: str = "user") -> dict:
-        if not isinstance(export, dict) or not str(export.get("format", "")).startswith("ourex."):
+        if not isinstance(export, dict) or not str(export.get("format", "")).startswith("myos."):
             raise ValueError("not a recognized myos export document")
         restored = 0
         for ent in export.get("entities", []):

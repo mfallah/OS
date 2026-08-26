@@ -142,7 +142,7 @@ class SkillRegistry:
                     ("name", "purpose", "instructions", "input_schema", "output_schema",
                      "tools", "permissions", "guardrails", "eval", "domain",
                      "memory_scope", "version", "composed_of")}
-        return {"format": "ourex.skill.v1", "skill": portable}
+        return {"format": "myos.skill.v1", "skill": portable}
 
     def test_run(self, skill_id: str, sample_input: dict, *, actor: str = "user") -> dict:
         """Validate schema and permissions without executing side effects."""

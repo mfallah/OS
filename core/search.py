@@ -1,7 +1,7 @@
 """Universal search across every entity kind, with natural-language filters.
 
 Understands lightweight NL operators embedded in free text:
-  kind:task  status:done  project:ourex  high priority  due today
+  kind:task  status:done  project:myos  high priority  due today
 Everything else is treated as semantic terms with explainable ranking.
 """
 from __future__ import annotations

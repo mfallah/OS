@@ -34,7 +34,7 @@ class VoicePipeline:
         if not key:
             raise IntegrationNotConfigured("voice STT", ["OPENAI_API_KEY"])
         audio = base64.b64decode(audio_base64)
-        boundary = "ourexvoice"
+        boundary = "myosvoice"
         body = b"\r\n".join([
             f"--{boundary}".encode(),
             b'Content-Disposition: form-data; name="model"',
