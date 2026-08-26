@@ -41,20 +41,20 @@ def seed(os_app) -> None:
     goal_year = e.create("goal", {
         "title": "Build a calm, intelligent Personal OS", "horizon": "year",
         "status": "active", "priority": 10, "horizon_rank": 1,
-    }, actor="system", idempotency_key="seed:goal:ourex")
+    }, actor="system", idempotency_key="seed:goal:myos")
     goal_rel = e.create("goal", {
         "title": "Keep key relationships warm", "horizon": "quarter",
         "status": "active", "priority": 8,
     }, actor="system", idempotency_key="seed:goal:relationships")
 
-    p_ourex = e.create("project", {
+    p_myos = e.create("project", {
         "name": "myos", "description": "Personal OS architecture and product",
         "vision": "Chief of staff for life, not another dashboard",
         "status": "active", "progress": 55, "clarity": 80,
         "next_action": "Finish orchestrator boundary",
         "objectives": ["Real core entities+graph", "Approval-aware workflows"],
         "success_criteria": ["Daily use for planning", "Zero un-audited actions"],
-    }, actor="system", idempotency_key="seed:project:ourex")
+    }, actor="system", idempotency_key="seed:project:myos")
     p_learn = e.create("project", {
         "name": "Learning systems", "description": "A sustainable research practice",
         "status": "active", "progress": 30, "clarity": 65,
@@ -145,16 +145,16 @@ def seed(os_app) -> None:
 
     # ---- graph structure: User -> Goal -> Project -> Task -> Decision -> ...
     g = os_app.graph
-    g.link(goal_year["id"], "supports", p_ourex["id"], actor="system")
-    g.link(p_ourex["id"], "belongs_to", goal_year["id"], actor="system")
+    g.link(goal_year["id"], "supports", p_myos["id"], actor="system")
+    g.link(p_myos["id"], "belongs_to", goal_year["id"], actor="system")
     for t in (t1, t3):
-        g.link(t["id"], "supports", p_ourex["id"], actor="system")
+        g.link(t["id"], "supports", p_myos["id"], actor="system")
     g.link(t2["id"], "supports", goal_rel["id"], actor="system")
     g.link(d1["id"], "depends_on", r1["id"], actor="system")
     g.link(q1["id"], "belongs_to", r1["id"], actor="system")
     g.link(i1["id"], "contributes_to", r1["id"], actor="system")
     g.link(k1["id"], "learned_from", r1["id"], actor="system")
-    g.link(sara["id"], "connected_to", p_ourex["id"], actor="system")
+    g.link(sara["id"], "connected_to", p_myos["id"], actor="system")
     g.link(t2["id"], "follows_up", sara["id"], actor="system")
     g.link(p_studio["id"], "conflicts_with", constitution["id"], actor="system")
 

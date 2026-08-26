@@ -65,45 +65,98 @@ export function confirmDialog({ title, body, confirmLabel = 'Confirm', danger = 
 }
 
 // Schema-driven mini form inside the shared detail modal.
-export function formDialog({ title, eyebrow, fields, values = {}, submitLabel = 'Save' }) {
+// `fields` render directly; `extraFields` (suggested) live under a collapsed
+// "more fields" section; users can add unlimited custom key/value fields.
+export function formDialog({ title, eyebrow, fields, values = {}, submitLabel = 'Save',
+                             extraFields = [], allowCustom = true }) {
   return new Promise((resolve) => {
     const host = $('#detailModal'); const card = $('#detailCard');
-    const fieldHtml = fields.map((f) => {
+    const fieldHtml = (f) => {
       const v = values[f.name] ?? f.value ?? '';
+      const listVal = Array.isArray(v) ? v.join(', ') : v;
       if (f.type === 'textarea') {
-        return `<div class="field"><label for="f_${f.name}">${esc(f.label)}</label>
-          <textarea id="f_${f.name}" name="${f.name}" placeholder="${esc(f.placeholder || '')}">${esc(v)}</textarea></div>`;
+        return `<div class="field" data-field="${f.name}"><label for="f_${f.name}">${esc(f.label)}</label>
+          <textarea id="f_${f.name}" name="${f.name}" placeholder="${esc(f.placeholder || '')}">${esc(listVal)}</textarea></div>`;
       }
       if (f.type === 'select') {
         const opts = f.options.map((o) => `<option value="${esc(o)}" ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('');
-        return `<div class="field"><label for="f_${f.name}">${esc(f.label)}</label>
+        return `<div class="field" data-field="${f.name}"><label for="f_${f.name}">${esc(f.label)}</label>
           <select id="f_${f.name}" name="${f.name}">${opts}</select></div>`;
       }
-      return `<div class="field"><label for="f_${f.name}">${esc(f.label)}</label>
-        <input id="f_${f.name}" name="${f.name}" type="${f.type || 'text'}" value="${esc(v)}" placeholder="${esc(f.placeholder || '')}"></div>`;
-    }).join('');
+      return `<div class="field" data-field="${f.name}"><label for="f_${f.name}">${esc(f.label)}</label>
+        <input id="f_${f.name}" name="${f.name}" type="${f.type || 'text'}" value="${esc(listVal)}" placeholder="${esc(f.placeholder || '')}"></div>`;
+    };
+    const shown = fields.map(fieldHtml).join('');
+    const extras = extraFields.filter((f) => !fields.some((x) => x.name === f.name));
+    const extraHtml = extras.length ? `<details class="addfield"><summary class="label" style="cursor:pointer">MORE FIELDS (${extras.length})</summary>
+      <div style="margin-top:6px">${extras.map(fieldHtml).join('')}</div></details>` : '';
+
     card.innerHTML = `
       <button class="close" data-x aria-label="Close">×</button>
       <div class="eyebrow">${esc(eyebrow || 'EDIT')}</div><h2>${esc(title)}</h2>
-      <form id="miniForm" novalidate>${fieldHtml}
+      <form id="miniForm" novalidate>${shown}${extraHtml}
+        ${allowCustom ? `<div class="detail-section"><div class="label">CUSTOM FIELDS — anything you want</div>
+          <div id="customRows"></div>
+          <button type="button" class="secondary" id="addCustomField" style="margin-top:6px">+ Add custom field</button></div>` : ''}
         <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
           <button class="primary" type="submit">${esc(submitLabel)}</button>
           <button class="secondary" type="button" data-x>Cancel</button>
         </div></form>`;
     host.classList.remove('hidden');
+
+    const parseValue = (raw) => {
+      const v = String(raw).trim();
+      if (v === '') return '';
+      if (v === 'true' || v === 'false') return v === 'true';
+      if (!Number.isNaN(Number(v)) && /^-?[\d.]+$/.test(v)) return Number(v);
+      return raw;
+    };
+    const collect = () => {
+      const data = {};
+      [...fields, ...extras].forEach((f) => {
+        const node = $(`#f_${f.name}`, card);
+        if (!node) return;
+        let value = node.value;
+        if (f.type === 'number') value = Number(value);
+        if (f.list || f.type === 'list') value = value.split(',').map((x) => x.trim()).filter(Boolean);
+        if (value !== '' && value != null) data[f.name] = value;
+      });
+      $$('#customRows .kv', card).forEach((row) => {
+        const key = $('.k', row).value.trim();
+        if (!key) return;
+        const rawVal = $('.v', row).value;
+        if (rawVal === '') return;
+        const val = parseValue(rawVal);
+        if (key === 'tags') { data.tags = String(rawVal).split(',').map((x) => x.trim()).filter(Boolean); return; }
+        data[key] = val;
+      });
+      return data;
+    };
+    const addCustomRow = (k = '', v = '') => {
+      const row = document.createElement('div');
+      row.className = 'kv';
+      row.innerHTML = `<input class="k" placeholder="field name" value="${esc(k)}" aria-label="Field name">
+        <input class="v" placeholder="value — number, text, true/false" value="${esc(v)}" aria-label="Field value">
+        <button type="button" data-remove aria-label="Remove field">×</button>`;
+      $('[data-remove]', row).addEventListener('click', () => row.remove());
+      $('#customRows', card).appendChild(row);
+    };
+    $('#addCustomField', card)?.addEventListener('click', () => addCustomRow());
+    // prefill known custom (non-schema) fields so editing shows everything
+    if (allowCustom) {
+      const schemaNames = new Set([...fields, ...extras].map((f) => f.name)
+        .concat(['kind', 'id', 'created_at', 'updated_at', 'metadata', 'graph', 'status', 'confidence', 'source']));
+      Object.entries(values).forEach(([k, v]) => {
+        if (schemaNames.has(k) || v == null || typeof v === 'object') return;
+        addCustomRow(k, Array.isArray(v) ? v.join(', ') : String(v));
+      });
+    }
+
     const done = (value) => { host.classList.add('hidden'); resolve(value); };
     $$('[data-x]', card).forEach((b) => b.addEventListener('click', () => done(null)));
     $('#miniForm', card).addEventListener('submit', (e) => {
       e.preventDefault();
-      const data = {};
-      fields.forEach((f) => {
-        const node = $(`#f_${f.name}`, card);
-        let value = node.value;
-        if (f.type === 'number') value = Number(value);
-        if (f.list) value = value.split(',').map((x) => x.trim()).filter(Boolean);
-        if (value !== '' && value != null) data[f.name] = value;
-      });
-      done(data);
+      done(collect());
     });
   });
 }

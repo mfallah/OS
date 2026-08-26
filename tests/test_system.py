@@ -352,7 +352,7 @@ class SkillAgentTests(unittest.TestCase):
     def test_skill_share_portable(self):
         skill = [s for s in self.os.skills.list()][0]
         share = self.os.skills.share(skill["id"])
-        self.assertEqual(share["format"], "ourex.skill.v1")
+        self.assertEqual(share["format"], "myos.skill.v1")
         self.assertNotIn("created_at", share["skill"])
 
 
@@ -394,7 +394,7 @@ class OwnershipTests(unittest.TestCase):
 
     def test_export_restore_roundtrip(self):
         dump = self.os.ownership.export_all()
-        self.assertEqual(dump["format"], "ourex.export.v1")
+        self.assertEqual(dump["format"], "myos.export.v1")
         other = fresh_app()
         try:
             result = other.ownership.restore(dump)
@@ -508,6 +508,67 @@ class ApiTests(unittest.TestCase):
     def test_unknown_route_404(self):
         status, _ = self.call("GET", "/api/nope")
         self.assertEqual(status, 404)
+
+    def test_schema_endpoint(self):
+        status, data = self.call("GET", "/api/core/schema")
+        self.assertEqual(status, 200)
+        self.assertIn("task", data["kinds"])
+        self.assertIn("task", data["fields"])
+        self.assertIn("supports", data["relations"])
+        self.assertTrue(any(f["name"] == "recurrence" for f in data["fields"]["task"]))
+
+    def test_flexible_fields_accepted_on_any_entity(self):
+        # Data-entry freedom: arbitrary fields on any kind, stored verbatim.
+        status, ent = self.call("POST", "/api/core/entities",
+                                {"kind": "resource", "title": "Zero trust doc",
+                                 "tags": ["security", "reading"],
+                                 "custom_score": 42,
+                                 "my_own_field": "anything goes"})
+        self.assertEqual(status, 201)
+        self.assertEqual(ent["my_own_field"], "anything goes")
+        status, listed = self.call("GET", "/api/core/entities",
+                                   query={"kind": "resource", "tag": "security"})
+        self.assertEqual(status, 200)
+        self.assertTrue(any(i["id"] == ent["id"] for i in listed["items"]))
+        status, listed = self.call("GET", "/api/core/entities",
+                                   query={"q": "zero trust"})
+        self.assertTrue(any(i["id"] == ent["id"] for i in listed["items"]))
+
+    def test_bulk_operations(self):
+        ids = []
+        for n in range(3):
+            _, t = self.call("POST", "/api/core/entities",
+                             {"kind": "task", "title": f"bulk {n}"})
+            ids.append(t["id"])
+        status, data = self.call("POST", "/api/core/entities/bulk",
+                                 {"action": "tag_add", "ids": ids, "tag": "sprint"})
+        self.assertEqual(data["tagged"], ids)
+        status, data = self.call("POST", "/api/core/entities/bulk",
+                                 {"action": "update", "ids": ids,
+                                  "patch": {"priority": "high"}})
+        self.assertEqual(data["updated"], ids)
+        _, ent = self.call("GET", f"/api/core/entities/{ids[0]}")
+        self.assertEqual(ent["priority"], "high")
+        self.assertIn("sprint", ent["tags"])
+        # delete is destructive → confirmation required
+        status, _ = self.call("POST", "/api/core/entities/bulk",
+                              {"action": "delete", "ids": ids[:1]})
+        self.assertEqual(status, 409)
+        status, data = self.call("POST", "/api/core/entities/bulk",
+                                 {"action": "delete", "ids": ids[:1],
+                                  "confirm": True})
+        self.assertEqual(data["deleted"], ids[:1])
+
+    def test_entity_history(self):
+        _, t = self.call("POST", "/api/core/entities",
+                         {"kind": "task", "title": "history check"})
+        self.call("POST", f"/api/core/entities/{t['id']}", {"status": "done"})
+        status, data = self.call("GET", f"/api/core/entities/{t['id']}/history")
+        self.assertEqual(status, 200)
+        kinds = [i["type"] for i in data["items"]]
+        self.assertIn("task.created", kinds)
+        self.assertIn("task.updated", kinds)
+        self.assertIn("task.completed", kinds)  # derived signal via subscriber
 
 
 if __name__ == "__main__":

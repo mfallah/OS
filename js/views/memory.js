@@ -78,7 +78,7 @@ export async function renderMemory(root, data, reload) {
   };
   $('[data-export]', root).onclick = async () => {
     const dump = await api.exportMemory();
-    download(`ourex-memory-${Date.now()}.json`, dump);
+    download(`myos-memory-${Date.now()}.json`, dump);
     toast(`Exported ${dump.memories.length} memories`);
   };
   $('[data-clear]', root).onclick = async () => {

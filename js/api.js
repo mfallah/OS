@@ -43,7 +43,8 @@ export const api = {
   unlink: (source, relation, target) => request('/api/core/graph/unlink', { method: 'POST', body: { source, relation, target } }),
   entity: (id) => request(`/api/core/entities/${id}`),
   search: (q) => request(`/api/core/search?q=${encodeURIComponent(q)}`),
-  capture: (text, entity) => request('/api/capture', { method: 'POST', body: { text, entity } }),
+  capture: (text, entity, extra = {}) =>
+    request('/api/capture', { method: 'POST', body: { text, entity, ...extra } }),
   ask: (message, extras = {}) => request('/api/core/plan', { method: 'POST', body: { message, ...extras } }),
   memories: (params = {}) => request('/api/core/memories?' + new URLSearchParams(params)),
   remember: (category, content, extra = {}) => request('/api/core/memory', { method: 'POST', body: { category, content, ...extra } }),

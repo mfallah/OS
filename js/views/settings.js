@@ -76,12 +76,12 @@ export async function renderSettings(root, data, reload) {
   </div>`;
 
   $$('[data-auto]', root).forEach((b) => b.onclick = () => {
-    localStorage.setItem('ourex.automation', b.dataset.auto);
+    localStorage.setItem('myos.automation', b.dataset.auto);
     toast(`Automation set to ${b.dataset.auto} — grants nothing above approvals`);
     $$('[data-auto]', root).forEach((x) => { x.classList.remove('done'); x.textContent = ''; });
     b.classList.add('done'); b.textContent = '✓';
   });
-  const savedAuto = localStorage.getItem('ourex.automation') || 'assistant';
+  const savedAuto = localStorage.getItem('myos.automation') || 'assistant';
   const autoBtn = $(`[data-auto="${savedAuto}"]`, root);
   if (autoBtn) {
     $$('[data-auto]', root).forEach((x) => { x.classList.remove('done'); x.textContent = ''; });
@@ -103,7 +103,7 @@ export async function renderSettings(root, data, reload) {
     const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `ourex-export-${Date.now()}.json`; a.click();
+    a.href = url; a.download = `myos-export-${Date.now()}.json`; a.click();
     URL.revokeObjectURL(url);
     toast(`Exported ${dump.counts.entities} entities, ${dump.counts.memories} memories`);
   };

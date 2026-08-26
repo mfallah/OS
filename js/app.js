@@ -88,7 +88,7 @@ function render() {
   const d = store.data;
   const reload = () => loadState();
   const renderers = {
-    command: () => renderCommand(root, d),
+    command: () => renderCommand(root, d, reload),
     tasks: () => renderTasks(root, d, reload),
     projects: () => renderProjects(root, d, reload),
     people: () => renderPeople(root, d, reload),
@@ -151,13 +151,23 @@ function bindCapture() {
   const save = async () => {
     const text = $('#captureText').value.trim();
     if (!text) return;
+    const extra = {};
+    const project = $('#captureProject')?.value.trim();
+    const due = $('#captureDue')?.value.trim();
+    const tags = $('#captureTags')?.value.split(',').map((x) => x.trim()).filter(Boolean);
+    if (project) extra.project = project;
+    if (due) extra.due = due;
+    if (tags?.length) extra.tags = tags;
     const btn = $('#saveCapture');
     btn.disabled = true;
     try {
-      const res = await api.capture(text, store.captureType || undefined);
+      const res = await api.capture(text, store.captureType || undefined, extra);
       const c = res.classification || {};
       toast(`Captured as ${res.entity.kind} — ${c.reason || 'filed'}${res.links_created?.length ? ` · linked to ${res.links_created[0].title}` : ''}`);
       $('#captureText').value = '';
+      if ($('#captureProject')) $('#captureProject').value = '';
+      if ($('#captureDue')) $('#captureDue').value = '';
+      if ($('#captureTags')) $('#captureTags').value = '';
       $('#captureModal').classList.add('hidden');
       $('#captureHint').textContent = `Next: ${res.next_step}`;
       loadState();
@@ -237,9 +247,9 @@ function closeSidebar() {
 function bindChrome() {
   $('#theme').onclick = () => {
     document.body.classList.toggle('dark');
-    localStorage.setItem('ourex.theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    localStorage.setItem('myos.theme', document.body.classList.contains('dark') ? 'dark' : 'light');
   };
-  if (localStorage.getItem('ourex.theme') === 'dark') document.body.classList.add('dark');
+  if (localStorage.getItem('myos.theme') === 'dark') document.body.classList.add('dark');
   $('#bellBtn').onclick = () => go('notifications');
   $('#fabCapture').onclick = openCapture;
   const hour = new Date().getHours();

@@ -90,6 +90,9 @@ Storage           SQLite (path via PERSONAL_OS_DB; /tmp on serverless)
 ## API surface
 
 All under `/api` (see `api_app.py`): `/api/health`, `/api/state`,
+`/api/core/schema` (kind catalog + suggested fields + statuses + relations),
+`/api/core/entities/bulk` (update / tag_add / tag_remove / delete),
+`/api/core/entities/{id}/history` (per-entity event trail),
 `/api/capture`, `/api/core/entities[/*]`, `/api/core/graph[/link|/unlink]`,
 `/api/core/load`, `/api/core/life-debt`, `/api/core/search`,
 `/api/core/context`, `/api/core/memories`, `/api/core/memory[/*/correct,
@@ -107,13 +110,22 @@ Mutations pass auth → rate limit → 100KB cap → JSON validation → handler
 
 ## Frontend
 
-Mobile-first ES modules (`js/`): `api.js` (typed client), `ui.js` (shared
-primitives, confirm/form dialogs), `detail.js` (entity drawer: fields, graph
-neighbors, link/unlink, edit, delete), `views/*` (one module per view),
-`app.js` (router + shell). Breakpoints: <760px mobile (bottom nav + drawer +
-full-width sheets), 760–1100 tablet (icon rail), >1100 desktop (full
-sidebar). 44px touch targets, focus-visible rings, skip link, ARIA labels,
-dark mode, loading/empty/error/offline states.
+Mobile-first ES modules (`js/`), styled by a **minimal / angular** design
+system: sharp corners (radius 0), hairline borders instead of soft shadows,
+monochrome ink + one signal color, grotesk headings with mono micro-labels,
+inline SVG icons, and a faint dot-grid canvas. Views stay calm by design:
+the command center leads with quick-add and four focused blocks, and tucks
+wider context into a collapsed drawer. Forms are schema-aware but never
+limiting — every entity accepts arbitrary custom fields (key/value), tags,
+and suggested extra fields under a "more fields" expander.
+(`js/`): `api.js` (typed client), `ui.js` (shared
+primitives, confirm/form dialogs with custom-field support), `detail.js`
+(entity drawer: overview/connections/activity tabs, tags, custom fields,
+edit, delete), `views/*` (one module per view), `app.js` (router + shell).
+Breakpoints: <760px mobile (bottom nav + drawer + full-width sheets),
+760–1100 tablet (icon rail), >1100 desktop (full sidebar). 44px touch
+targets, focus-visible rings, skip link, ARIA labels, dark mode,
+loading/empty/error/offline states.
 
 ## Production expansion path
 

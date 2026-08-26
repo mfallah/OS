@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: ourex-personal-os
+    name: myos
     env: python
     buildCommand: ""
     startCommand: "python3 server.py"
