@@ -6,7 +6,7 @@ import { $, $$, esc, title, pill, relTime, dueLabel, DONE, errorBox, toast } fro
 import { openEntity } from '../detail.js';
 
 // Inline quick-capture syntax: "#tag #tag2" → tags, "+Project" → project.
-function parseQuickAdd(text) {
+export function parseQuickAdd(text) {
   const tags = [];
   let project;
   const stripped = text
