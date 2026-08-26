@@ -90,6 +90,14 @@
       <button data-type="note">Note</button>
       <button data-type="decision">Decision</button>
     </div>
+    <details class="addfield" style="margin-bottom:12px">
+      <summary class="label" style="cursor:pointer">OPTIONAL — FILE IT NOW</summary>
+      <div class="form-row" style="margin-top:8px">
+        <div class="field"><label for="captureProject">Project</label><input id="captureProject" placeholder="+ project"></div>
+        <div class="field"><label for="captureDue">Due</label><input id="captureDue" placeholder="YYYY-MM-DD"></div>
+      </div>
+      <div class="field"><label for="captureTags">Tags</label><input id="captureTags" placeholder="comma, separated"></div>
+    </details>
     <button class="primary wide" id="saveCapture">Capture to myos <span aria-hidden="true">↵</span></button>
     <p class="muted tiny" id="captureHint">Auto mode guesses the type and explains its reasoning.</p>
   </div>

@@ -8,7 +8,8 @@ Everything the system does is grounded in real subsystems: a SQLite domain core,
 typed entities with a personal graph, provenance-carrying memories, an event
 log, a permission/risk/approval engine, a bounded context engine, and an
 audited workflow runtime. The UI is a fully wired client of the same API —
-no mock screens.
+no mock screens — designed **minimal and angular**: sharp geometry, hairline
+borders, monochrome ink, tools at hand, context collapsed by default.
 
 ## What it does today
 
@@ -19,7 +20,11 @@ no mock screens.
   calendar context, recent changes and a recommended next action.
 - **Entities & Graph** — 40+ typed entity kinds; any entity links to any other
   via 15 relation types (`supports`, `blocks`, `depends_on`, …). Create, edit,
-  soft-delete and connect everything from the UI.
+  soft-delete and connect everything from the UI. Data entry is deliberately
+  open-ended: every entity accepts **unlimited custom fields** and tags, on
+  top of per-kind suggested fields — the schema is a starting point, not a
+  straightjacket. Bulk tag/update/delete from the Tasks and Projects
+  workbenches, with a per-entity event history drawer.
 - **Memory Governance** — layered memory with source, provenance, confidence,
   importance, scope, expiry and *why remembered*. Uncertain assumptions stay
   **unconfirmed** until you promote them. Correct, delete, export, clear, or

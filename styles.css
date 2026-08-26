@@ -280,6 +280,12 @@ body.dark .bar i{background-image:repeating-linear-gradient(90deg,transparent 0 
   min-width:32px;min-height:32px;font-size:13px}
 .kv button:hover{color:var(--red);border-color:var(--red)}
 .addfield{margin-top:8px}
+details.addfield>summary{cursor:pointer;list-style:none;color:var(--muted);
+  font-family:var(--mono);font-size:9.5px;letter-spacing:1.6px;text-transform:uppercase}
+details.addfield>summary::-webkit-details-marker{display:none}
+details.addfield>summary::before{content:'+ '}
+details.addfield[open]>summary::before{content:'– '}
+details.addfield>summary:hover{color:var(--ink)}
 
 /* --------------------------------------------------------------- modal */
 .hidden{display:none!important}
