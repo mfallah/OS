@@ -1,12 +1,15 @@
 {
   "name": "ourex-personal-os",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "A calm, AI-native Personal Operating System command center",
+  "description": "Ourex — an AI-native Personal Operating System: entities, graph, governed memory, approval-aware workflows and an explainable chief of staff.",
   "scripts": {
     "start": "python3 server.py",
     "dev": "python3 server.py",
-    "check": "node --check app.js && python3 -m py_compile server.py && python3 -m unittest test_core.py"
+    "check": "npm run check:js && npm run check:py && npm run test",
+    "check:js": "for f in js/*.js js/views/*.js; do node --check \"$f\" || exit 1; done",
+    "check:py": "python3 -m py_compile server.py api_app.py api/index.py personal_os_core.py core/*.py core/integrations/*.py",
+    "test": "python3 -m unittest test_core.py && python3 -m unittest discover -s tests"
   },
-  "engines": {"node": ">=18"}
+  "engines": { "node": ">=18" }
 }

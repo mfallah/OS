@@ -1,8 +1,114 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ourex — Personal OS</title><link rel="stylesheet" href="styles.css"></head>
-<body><div class="shell">
-<aside class="sidebar"><div class="brand"><div class="mark">◒</div><div><strong>Ourex</strong><small>PERSONAL OS</small></div></div><div class="profile"><div class="avatar">M</div><div><b>Good morning, M.</b><span>Tuesday, August 25</span></div></div>
-<nav><a class="active" data-view="command"><i>⌂</i> Command Center</a><a data-view="projects"><i>▦</i> Projects <em>3</em></a><a data-view="tasks"><i>✓</i> Tasks <em>4</em></a><a data-view="people"><i>♧</i> Relationships</a><a data-view="ideas"><i>✦</i> Idea garden</a><a data-view="research"><i>⌁</i> Research & knowledge</a></nav><div class="nav-label">SYSTEM</div><nav><a data-view="reviews"><i>◷</i> Reviews</a><a data-view="memory"><i>◈</i> Memory</a><a data-view="agents"><i>◎</i> Agents & skills</a><a data-view="settings"><i>⚙</i> Settings</a></nav><div class="sidebar-bottom"><div class="load"><span>COGNITIVE LOAD</span><b>42 <small>/ 100</small></b><div class="meter"><i style="width:42%"></i></div><small>Balanced · 3h 20m unallocated</small></div><button class="icon-btn" id="theme">☼</button></div></aside>
-<main><header><div class="breadcrumbs"><span id="view-kicker">COMMAND CENTER</span><h1 id="view-title">What matters now?</h1></div><div class="header-actions"><button class="search" id="searchBtn">⌕ <span>Search your OS</span><kbd>⌘ K</kbd></button><button class="bell">♧<i></i></button><div class="avatar small">M</div></div></header><div id="app"></div></main></div>
-<div class="modal hidden" id="captureModal"><div class="modal-card"><button class="close" id="closeModal">×</button><div class="eyebrow">QUICK CAPTURE</div><h2>Get it out of your head.</h2><p class="muted">Capture naturally. Ourex will organize and connect it later.</p><textarea id="captureText" placeholder="I need to... / I just thought of... / Note..."></textarea><div class="capture-types"><button data-type="task" class="selected">✓ Task</button><button data-type="idea">✦ Idea</button><button data-type="note">▤ Note</button></div><button class="primary wide" id="saveCapture">Capture to Ourex <span>↵</span></button></div></div>
-<div class="toast" id="toast"></div><script src="app.js"></script></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Ourex — an AI-native personal operating system. What matters now, explained.">
+<meta name="theme-color" content="#f7f8f9">
+<title>Ourex — Personal OS</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="shell">
+  <div class="backdrop" id="backdrop" hidden></div>
+  <aside class="sidebar" id="sidebar" aria-label="Primary">
+    <div class="brand"><div class="mark" aria-hidden="true">◒</div>
+      <div class="brand-text"><strong>Ourex</strong><small>PERSONAL OS</small></div>
+      <button class="icon-btn sidebar-close" id="sidebarClose" aria-label="Close menu">×</button>
+    </div>
+    <div class="profile"><div class="avatar" id="avatarLetter" aria-hidden="true">M</div>
+      <div><b id="greeting">Good day.</b><span id="todayLine"></span></div>
+    </div>
+    <nav id="nav" aria-label="Workspace">
+      <a data-view="command" class="active"><i aria-hidden="true">⌂</i><span>Command Center</span></a>
+      <a data-view="tasks"><i aria-hidden="true">✓</i><span>Tasks</span><em data-badge="tasks"></em></a>
+      <a data-view="projects"><i aria-hidden="true">▦</i><span>Projects</span><em data-badge="projects"></em></a>
+      <a data-view="people"><i aria-hidden="true">♧</i><span>Relationships</span></a>
+      <a data-view="ideas"><i aria-hidden="true">✦</i><span>Idea Garden</span></a>
+      <a data-view="research"><i aria-hidden="true">⌁</i><span>Research & Knowledge</span></a>
+    </nav>
+    <div class="nav-label">SYSTEM</div>
+    <nav aria-label="System">
+      <a data-view="reviews"><i aria-hidden="true">◷</i><span>Reviews</span></a>
+      <a data-view="workflows"><i aria-hidden="true">⚡</i><span>Workflows & Approvals</span><em data-badge="approvals"></em></a>
+      <a data-view="memory"><i aria-hidden="true">◈</i><span>Memory Governance</span></a>
+      <a data-view="agents"><i aria-hidden="true">◎</i><span>Agents & Skills</span></a>
+      <a data-view="settings"><i aria-hidden="true">⚙</i><span>Settings & Health</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="load" role="status" aria-label="Cognitive load">
+        <span>COGNITIVE LOAD</span>
+        <b id="loadScore">— <small>/ 100</small></b>
+        <div class="meter"><i id="loadMeter" style="width:0%"></i></div>
+        <small id="loadNote">Checking your board…</small>
+      </div>
+      <button class="icon-btn" id="theme" aria-label="Toggle dark mode">☼</button>
+    </div>
+  </aside>
+
+  <main id="main" tabindex="-1">
+    <header>
+      <button class="icon-btn hamburger" id="hamburger" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">☰</button>
+      <div class="breadcrumbs">
+        <span id="view-kicker">COMMAND CENTER</span>
+        <h1 id="view-title">What matters now?</h1>
+      </div>
+      <div class="header-actions">
+        <button class="search" id="searchBtn" aria-label="Search your OS">⌕<span>Search your OS</span><kbd>⌘K</kbd></button>
+        <button class="icon-btn bell" id="bellBtn" aria-label="Notifications">♧<i id="bellDot" hidden></i></button>
+        <div class="avatar small" aria-hidden="true">M</div>
+      </div>
+    </header>
+    <div id="offlineBanner" class="offline-banner" hidden>
+      You're offline or the API is unreachable — showing the last known snapshot. Changes will queue locally.
+    </div>
+    <div id="app" aria-live="polite"><div class="loading">Loading your Personal OS…</div></div>
+  </main>
+</div>
+
+<nav class="bottom-nav" aria-label="Mobile">
+  <a data-view="command" class="active"><i>⌂</i><span>Now</span></a>
+  <a data-view="tasks"><i>✓</i><span>Tasks</span></a>
+  <button id="fabCapture" class="fab" aria-label="Quick capture">＋</button>
+  <a data-view="projects"><i>▦</i><span>Projects</span></a>
+  <a data-view="memory"><i>◈</i><span>Memory</span></a>
+</nav>
+
+<div class="modal hidden" id="captureModal" role="dialog" aria-modal="true" aria-labelledby="captureTitle">
+  <div class="modal-card">
+    <button class="close" id="closeModal" aria-label="Close">×</button>
+    <div class="eyebrow">QUICK CAPTURE</div>
+    <h2 id="captureTitle">Get it out of your head.</h2>
+    <p class="muted">Capture naturally. Ourex classifies, links and files it — and tells you why.</p>
+    <textarea id="captureText" placeholder="I need to… / I just thought of… / Someone told me…" rows="4"></textarea>
+    <div class="capture-types" role="group" aria-label="Capture type">
+      <button data-type="" class="selected">✦ Auto</button>
+      <button data-type="task">✓ Task</button>
+      <button data-type="idea">✦ Idea</button>
+      <button data-type="note">▤ Note</button>
+      <button data-type="decision">◇ Decision</button>
+    </div>
+    <button class="primary wide" id="saveCapture">Capture to Ourex <span aria-hidden="true">↵</span></button>
+    <p class="muted tiny" id="captureHint">Auto mode guesses the type and explains its reasoning.</p>
+  </div>
+</div>
+
+<div class="modal hidden" id="searchModal" role="dialog" aria-modal="true" aria-labelledby="searchTitle">
+  <div class="modal-card modal-wide">
+    <button class="close" id="closeSearch" aria-label="Close">×</button>
+    <div class="eyebrow">UNIVERSAL SEARCH</div>
+    <h2 id="searchTitle" class="visually-hidden">Search</h2>
+    <input id="searchInput" type="search" placeholder="Search tasks, projects, people, ideas, decisions… try: kind:task due:today" autocomplete="off">
+    <div id="searchResults" class="search-results"><p class="muted">Results across your whole graph, with reasons.</p></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="detailModal" role="dialog" aria-modal="true">
+  <div class="modal-card modal-wide" id="detailCard"></div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
