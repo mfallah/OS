@@ -1,8 +1,8 @@
 {
-  "name": "ourex-personal-os",
+  "name": "myos",
   "version": "2.0.0",
   "private": true,
-  "description": "Ourex — an AI-native Personal Operating System: entities, graph, governed memory, approval-aware workflows and an explainable chief of staff.",
+  "description": "myos — an AI-native Personal Operating System: entities, graph, governed memory, approval-aware workflows and an explainable chief of staff.",
   "scripts": {
     "start": "python3 server.py",
     "dev": "python3 server.py",

@@ -32,7 +32,7 @@ def seed(os_app) -> None:
                             "Family before notifications"],
         "risk_tolerance": "moderate", "planning_style": "capacity-aware",
         "communication_style": "concise and warm",
-        "priorities": ["Ship Ourex core", "Keep research practice alive",
+        "priorities": ["Ship myos core", "Keep research practice alive",
                        "Stay close to family"],
         "active_project_limit": 3,
         "notification_preferences": {"daily_budget": 12, "quiet_hours": ["21:00", "08:00"]},
@@ -48,7 +48,7 @@ def seed(os_app) -> None:
     }, actor="system", idempotency_key="seed:goal:relationships")
 
     p_ourex = e.create("project", {
-        "name": "Ourex", "description": "Personal OS architecture and product",
+        "name": "myos", "description": "Personal OS architecture and product",
         "vision": "Chief of staff for life, not another dashboard",
         "status": "active", "progress": 55, "clarity": 80,
         "next_action": "Finish orchestrator boundary",
@@ -65,7 +65,7 @@ def seed(os_app) -> None:
         "status": "at-risk", "progress": 15, "clarity": 40,
     }, actor="system", idempotency_key="seed:project:studio")
 
-    t1 = e.create("task", {"title": "Review Ourex architecture", "project": "Ourex",
+    t1 = e.create("task", {"title": "Review myos architecture", "project": "myos",
                            "priority": "high", "status": "in-progress", "estimate": 90,
                            "due": str(today), "energy": "deep"},
                   actor="system", idempotency_key="seed:task:arch")
@@ -73,7 +73,7 @@ def seed(os_app) -> None:
                            "priority": "medium", "status": "open", "estimate": 15,
                            "due": str(today), "energy": "light"},
                   actor="system", idempotency_key="seed:task:sara")
-    t3 = e.create("task", {"title": "Synthesize MCP research", "project": "Ourex",
+    t3 = e.create("task", {"title": "Synthesize MCP research", "project": "myos",
                            "priority": "high", "status": "open", "estimate": 60,
                            "due": str(today + timedelta(days=1)), "energy": "deep"},
                   actor="system", idempotency_key="seed:task:mcp")
@@ -85,7 +85,7 @@ def seed(os_app) -> None:
     sara = e.create("person", {
         "name": "Sara Rahimi", "role": "Product collaborator", "importance": "high",
         "last_contact": _days_ago(9), "cadence_days": 7,
-        "need": "Follow up on Ourex research",
+        "need": "Follow up on myos research",
         "communication_preference": "concise async",
     }, actor="system", idempotency_key="seed:person:sara")
     mina = e.create("person", {
@@ -96,7 +96,7 @@ def seed(os_app) -> None:
 
     i1 = e.create("idea", {
         "title": "MCP as a universal connection layer",
-        "raw_capture": "Connect Ourex to external AI systems without coupling the core.",
+        "raw_capture": "Connect myos to external AI systems without coupling the core.",
         "summary": "MCP servers as pluggable tools behind the registry.",
         "status": "developing", "potential": "high", "origin": "reading MCP spec",
     }, actor="system", idempotency_key="seed:idea:mcp")
@@ -159,7 +159,7 @@ def seed(os_app) -> None:
     g.link(p_studio["id"], "conflicts_with", constitution["id"], actor="system")
 
     os_app.memory_store.remember(
-        "identity", "User is building Ourex, a calm AI-native personal OS",
+        "identity", "User is building myos, a calm AI-native personal OS",
         confidence=1.0, source="system", importance=9,
         provenance="seed", why="seeded identity fact from repository context")
     os_app.memory_store.remember(

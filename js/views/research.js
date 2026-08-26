@@ -12,7 +12,7 @@ export async function renderResearch(root, data, reload) {
     <section class="card">
       <div class="eyebrow">RESEARCH OS</div>
       <h2 style="margin:6px 0 10px">Continue from what you know.</h2>
-      <p class="muted">Before starting something new, Ourex surfaces prior findings, stale threads and unanswered questions — so research compounds instead of restarting.</p>
+      <p class="muted">Before starting something new, myos surfaces prior findings, stale threads and unanswered questions — so research compounds instead of restarting.</p>
       <form id="priorForm" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
         <input id="priorTopic" placeholder="Topic, e.g. MCP permissions" style="flex:1;min-width:180px;min-height:44px;border:1px solid var(--line);border-radius:9px;padding:0 12px">
         <button class="primary" type="submit">Check prior research</button>

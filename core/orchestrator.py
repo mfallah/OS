@@ -179,7 +179,7 @@ class Orchestrator:
     # ---------------------------------------------------------------- prompt
     def _prompt_layers(self, agent: dict, ctx: dict, message: str, draft) -> dict:
         return {
-            "system_identity": {"name": "Ourex", "role": "personal chief of staff",
+            "system_identity": {"name": "myos", "role": "personal chief of staff",
                                 "tone": "calm, precise, honest"},
             "safety_policy": SAFETY_POLICY["rules"],
             "agent_role": {"name": agent.get("name"), "domain": agent.get("domain"),

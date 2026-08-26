@@ -1,6 +1,6 @@
 # Environment variables
 
-Ourex reads all configuration from environment variables. **Never commit
+myos reads all configuration from environment variables. **Never commit
 secrets to this repository.** Every integration runs in a truthful simulator
 mode when its variables are absent and reports exactly which variable it
 needs (see `/api/integrations/status`).

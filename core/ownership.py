@@ -35,7 +35,7 @@ class DataOwnership:
 
     def restore(self, export: dict, *, actor: str = "user") -> dict:
         if not isinstance(export, dict) or not str(export.get("format", "")).startswith("ourex."):
-            raise ValueError("not a recognized Ourex export document")
+            raise ValueError("not a recognized myos export document")
         restored = 0
         for ent in export.get("entities", []):
             kind = ent.pop("kind", None)

@@ -1,4 +1,4 @@
-// Memory Governance: you own what Ourex remembers — see, edit, correct,
+// Memory Governance: you own what myos remembers — see, edit, correct,
 // delete, export, disable categories, and always know *why* it was remembered.
 import { api } from '../api.js';
 import { $, $$, esc, pill, toast, formDialog, confirmDialog, relTime, emptyState } from '../ui.js';
@@ -53,7 +53,7 @@ export async function renderMemory(root, data, reload) {
             <button class="quiet" data-delete="${m.id}" style="color:var(--red)">Delete</button>
             <button class="quiet" data-cat-off="${m.category}">Disable “${m.category}”</button>
           </div>
-        </article>`).join('') : emptyState('Nothing remembered here.', 'Capture or talk to Ourex — episodic notes appear automatically.')}
+        </article>`).join('') : emptyState('Nothing remembered here.', 'Capture or talk to myos — episodic notes appear automatically.')}
     </div>
     ${disabled.size ? `<p class="muted tiny" style="margin-top:12px">Disabled categories: ${[...disabled].map((c) => `<button class="quiet" data-cat-on="${c}">re-enable “${c}”</button>`).join(' · ')}</p>` : ''}
   </div>`;
@@ -69,7 +69,7 @@ export async function renderMemory(root, data, reload) {
         { name: 'category', label: 'Category', type: 'select', options: CATEGORIES },
         { name: 'content', label: 'Content', type: 'textarea' },
         { name: 'importance', label: 'Importance (1-10)', type: 'number' },
-        { name: 'why', label: 'Why should Ourex remember this?' },
+        { name: 'why', label: 'Why should myos remember this?' },
       ],
     });
     if (!v?.content) return;

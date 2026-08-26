@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ourex Personal OS — local development server.
+"""myos Personal OS — local development server.
 
 Serves the static frontend from the repository root and the full JSON API
 through the same host-neutral dispatcher the Vercel function uses. Reads:
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", "8000"))
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
-    print(f"Ourex Personal OS → http://0.0.0.0:{port}")
+    print(f"myos Personal OS → http://0.0.0.0:{port}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

@@ -1,8 +1,8 @@
-# Ourex Personal OS — Architecture
+# myos Personal OS — Architecture
 
 ## Design stance
 
-Ourex is one system, not a set of screens. Every interface (web, Telegram,
+myos is one system, not a set of screens. Every interface (web, Telegram,
 Bale, voice, API) talks to the **same domain core** through the same
 host-neutral dispatcher, so behavior is identical locally and on Vercel. The
 core is dependency-free Python; the web client is dependency-free ES modules.

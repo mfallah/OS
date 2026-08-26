@@ -6,11 +6,11 @@ class CoreTests(unittest.TestCase):
         self.tmp=tempfile.NamedTemporaryFile(suffix='.sqlite3'); self.os=PersonalOS(self.tmp.name)
     def tearDown(self): self.os.close(); self.tmp.close()
     def test_entity_graph_and_context(self):
-        p=self.os.create('project', {'name':'Ourex','status':'active'})
-        t=self.os.create('task', {'title':'Review Ourex','project':p['id']})
+        p=self.os.create('project', {'name':'myos','status':'active'})
+        t=self.os.create('task', {'title':'Review myos','project':p['id']})
         self.os.link(t['id'],'supports',p['id'])
-        self.assertEqual(self.os.get(t['id'])['title'],'Review Ourex')
-        self.assertTrue(self.os.search('Ourex'))
+        self.assertEqual(self.os.get(t['id'])['title'],'Review myos')
+        self.assertTrue(self.os.search('myos'))
         self.assertTrue(self.os.neighbors(t['id']))
     def test_memory_provenance(self):
         m=self.os.remember('preference','Prefers concise weekly reviews',confidence=.9,source='user')
