@@ -1,4 +1,4 @@
-# Ourex — Personal OS
+# myos — Personal OS
 
 An AI-native personal operating system: one source of truth for your entities,
 graph, governed memory, workflows and approvals — with an explainable chief of

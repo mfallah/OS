@@ -244,14 +244,14 @@ class ContextTests(unittest.TestCase):
         self.os.close()
 
     def test_bounded_and_explained(self):
-        ctx = self.os.context.retrieve("Ourex architecture research")
+        ctx = self.os.context.retrieve("myos architecture research")
         self.assertLessEqual(len(ctx["selected_entities"]), ctx["budget"]["entities"])
         self.assertIn("full database is never sent", ctx["budget"]["note"])
         for ent in ctx["selected_entities"]:
             self.assertTrue(ent.get("retrieval_reason"))
 
     def test_focal_neighbors(self):
-        project = [p for p in self.os.entities.list("project") if p.get("name") == "Ourex"][0]
+        project = [p for p in self.os.entities.list("project") if p.get("name") == "myos"][0]
         ctx = self.os.context.retrieve("status", focal_entity=project["id"])
         self.assertTrue(ctx["graph_neighbors"])
 
@@ -309,7 +309,7 @@ class CaptureTests(unittest.TestCase):
         self.assertEqual(task["entity"]["kind"], "task")
 
     def test_auto_linking(self):
-        result = self.os.capture_service.capture("Finishing Ourex integration work today")
+        result = self.os.capture_service.capture("Finishing myos integration work today")
         self.assertTrue(result["entity"]["id"])
 
     def test_email_intelligence(self):
@@ -460,7 +460,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(data["error"]["code"], "bad_request")
 
     def test_search_endpoint(self):
-        status, data = self.call("GET", "/api/core/search", query={"q": "Ourex"})
+        status, data = self.call("GET", "/api/core/search", query={"q": "myos"})
         self.assertEqual(status, 200)
         self.assertIn("explainability", data)
 

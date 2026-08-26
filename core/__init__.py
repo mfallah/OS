@@ -1,4 +1,4 @@
-"""Ourex Personal OS — dependency-free domain core package."""
+"""myos Personal OS — dependency-free domain core package."""
 from .app import PersonalOS
 from .permissions import PERMISSIONS, RISK
 from .entities import ENTITY_KINDS
