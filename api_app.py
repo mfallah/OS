@@ -18,7 +18,7 @@ import re
 from functools import lru_cache
 
 from core.app import PersonalOS
-from core.entities import ENTITY_KINDS, ValidationError
+from core.entities import ENTITY_KINDS, KIND_FIELD_SUGGESTIONS, KIND_STATUSES, UNIVERSAL_FIELDS, ValidationError
 from core.integrations import BaleAdapter, TelegramAdapter, VoicePipeline
 from core.security import MAX_BODY_BYTES, RATE_LIMIT_MUTATIONS
 
@@ -130,14 +130,70 @@ def capture(app, params, body, headers):
 
 
 # ----------------------------------------------------------------- entities
+@route("GET", r"/api/core/schema")
+def schema(app, params, body, headers):
+    """Kind catalog + suggested fields + statuses + relations. The UI builds
+    its forms from this — suggestions only, never a straightjacket: every
+    entity accepts arbitrary extra fields."""
+    from core.graph import RELATIONS
+    return ok({
+        "kinds": ENTITY_KINDS,
+        "statuses": KIND_STATUSES,
+        "fields": KIND_FIELD_SUGGESTIONS,
+        "universal_fields": UNIVERSAL_FIELDS,
+        "relations": sorted(RELATIONS),
+        "note": "any extra field is stored on any entity — the schema is a starting point",
+    })
+
+
 @route("GET", r"/api/core/entities")
 def entities_list(app, params, body, headers):
     kind = params.get("kind")
     if kind and kind not in ENTITY_KINDS:
         return bad_request(f"unknown entity kind: {kind}", "unknown_kind")
     return ok({"items": app.entities.list(kind, limit=int(params.get("limit", 200)),
-                                          status=params.get("status")),
+                                          status=params.get("status"),
+                                          tag=params.get("tag"),
+                                          q=params.get("q")),
                "kinds": ENTITY_KINDS})
+
+
+@route("POST", r"/api/core/entities/bulk")
+def entities_bulk(app, params, body, headers):
+    """Bulk operations: update / tag_add / tag_remove / delete.
+    Delete is destructive and requires confirm=true (query or body)."""
+    action = body.get("action")
+    ids = body.get("ids") or []
+    if not isinstance(ids, list) or not ids:
+        return bad_request("provide a non-empty 'ids' array")
+    if action == "update":
+        patch = body.get("patch")
+        if not isinstance(patch, dict) or not patch:
+            return bad_request("bulk update requires a 'patch' object")
+        return ok(app.entities.bulk_update(ids, patch, actor="user"))
+    if action in {"tag_add", "tag_remove"}:
+        tag = (body.get("tag") or "").strip()
+        if not tag:
+            return bad_request(f"{action} requires 'tag'")
+        return ok(app.entities.bulk_tag(ids, tag, remove=action == "tag_remove",
+                                        actor="user"))
+    if action == "delete":
+        blocked = _require_confirm({**{k: str(v) for k, v in body.items()},
+                                    **params})
+        if blocked:
+            return blocked
+        return ok(app.entities.bulk_delete(ids, actor="user"))
+    return bad_request("action must be one of update, tag_add, tag_remove, delete",
+                       "unknown_action")
+
+
+@route("GET", r"/api/core/entities/(?P<entity_id>[\w-]+)/history")
+def entities_history(app, params, body, headers, entity_id):
+    if not app.entities.get(entity_id):
+        return not_found(f"entity {entity_id}")
+    return ok({"entity_id": entity_id,
+               "items": app.entities.history(entity_id,
+                                             limit=int(params.get("limit", 50)))})
 
 
 @route("POST", r"/api/core/entities")
