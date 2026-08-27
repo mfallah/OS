@@ -259,7 +259,8 @@ class EntityStore:
         row = self._row(entity_id)
         now = iso()
         self.db.execute("UPDATE entities SET deleted_at=? WHERE id=?", (now, entity_id))
-        self.db.execute("DELETE FROM edges WHERE source=? OR target=?", (entity_id, entity_id))
+        # Keep graph edges dormant so a soft-delete is genuinely recoverable.
+        # Graph reads hide edges whose other endpoint is currently deleted.
         self.events.emit(f"{row['kind']}.deleted",
                          {"entity_id": entity_id, "kind": row["kind"]}, actor=actor)
         return {"id": entity_id, "deleted_at": now}

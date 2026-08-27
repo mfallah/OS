@@ -27,10 +27,27 @@ class NotificationCenter:
             defaults.update(loads(row["value"]))
         return defaults
 
-    def set_prefs(self, patch: dict) -> dict:
+    def set_prefs(self, patch: dict, *, actor: str = "user") -> dict:
         prefs = {**self.prefs(), **patch}
+        try:
+            budget = int(prefs["daily_budget"])
+        except (TypeError, ValueError):
+            raise ValueError("daily_budget must be an integer")
+        if not 0 <= budget <= 100:
+            raise ValueError("daily_budget must be between 0 and 100")
+        quiet = prefs.get("quiet_hours")
+        if not isinstance(quiet, list) or len(quiet) != 2 or not all(
+                isinstance(value, str) and __import__("re").fullmatch(
+                    r"(?:[01]\d|2[0-3]):[0-5]\d", value) for value in quiet):
+            raise ValueError("quiet_hours must contain two HH:MM values")
+        if prefs.get("urgency_threshold") not in CATEGORY_RANK:
+            raise ValueError("urgency_threshold is invalid")
+        if not isinstance(prefs.get("digest_mode"), bool):
+            raise ValueError("digest_mode must be boolean")
+        prefs["daily_budget"] = budget
         self.db.execute("INSERT OR REPLACE INTO preferences(key,value) VALUES(?,?)",
                         ("notifications.prefs", dumps(prefs)))
+        self.events.emit("notification.policy_updated", {"keys": sorted(patch)}, actor=actor)
         return prefs
 
     def create(self, *, category: str, title: str, body: str | None = None,
@@ -90,15 +107,29 @@ class NotificationCenter:
         sql += " ORDER BY created_at DESC LIMIT ?"; args.append(int(limit))
         return [self._map(r) for r in self.db.query(sql, args)]
 
-    def mark(self, nid: str, status: str) -> dict:
+    def mark(self, nid: str, status: str, *, actor: str = "user") -> dict | None:
         if status not in {"unread", "read", "archived"}:
             raise ValueError("status must be unread, read or archived")
-        self.db.execute("UPDATE notifications SET status=? WHERE id=?", (status, nid))
+        cur = self.db.execute("UPDATE notifications SET status=? WHERE id=?", (status, nid))
+        if not cur.rowcount:
+            return None
+        self.events.emit("notification.status_changed", {"id": nid, "status": status},
+                         actor=actor)
         return self.get(nid)
 
-    def snooze(self, nid: str, until_iso: str) -> dict:
-        self.db.execute("UPDATE notifications SET snoozed_until=? WHERE id=?",
-                        (until_iso, nid))
+    def snooze(self, nid: str, until_iso: str, *, actor: str = "user") -> dict | None:
+        try:
+            until = datetime.fromisoformat(str(until_iso).replace("Z", "+00:00"))
+            if until.tzinfo is None:
+                until = until.replace(tzinfo=UTC)
+        except (TypeError, ValueError):
+            raise ValueError("until must be a valid ISO-8601 date/time")
+        cur = self.db.execute("UPDATE notifications SET snoozed_until=? WHERE id=?",
+                              (until.astimezone(UTC).isoformat(timespec="seconds"), nid))
+        if not cur.rowcount:
+            return None
+        self.events.emit("notification.snoozed", {"id": nid, "until": until.isoformat()},
+                         actor=actor)
         return self.get(nid)
 
     @staticmethod

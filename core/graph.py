@@ -33,19 +33,22 @@ class Graph:
             raise GraphError(f"target entity not found: {target}")
         if source == target:
             raise GraphError("self-links are not allowed")
-        self.db.execute(
+        cur = self.db.execute(
             "INSERT OR IGNORE INTO edges(source,relation,target,created_at,created_by)"
             " VALUES(?,?,?,?,?)", (source, relation, target, iso(), actor))
-        self.events.emit("graph.linked", {"source": source, "relation": relation,
-                                          "target": target}, actor=actor)
-        return {"source": source, "relation": relation, "target": target}
+        if cur.rowcount:
+            self.events.emit("graph.linked", {"source": source, "relation": relation,
+                                              "target": target}, actor=actor)
+        return {"source": source, "relation": relation, "target": target,
+                "created": cur.rowcount > 0}
 
     def unlink(self, source: str, relation: str, target: str, *, actor: str = "user") -> dict:
         cur = self.db.execute(
             "DELETE FROM edges WHERE source=? AND relation=? AND target=?",
             (source, relation, target))
-        self.events.emit("graph.unlinked", {"source": source, "relation": relation,
-                                            "target": target}, actor=actor)
+        if cur.rowcount:
+            self.events.emit("graph.unlinked", {"source": source, "relation": relation,
+                                                "target": target}, actor=actor)
         return {"removed": cur.rowcount > 0}
 
     def neighbors(self, entity_id: str, relation: str | None = None,
@@ -57,7 +60,7 @@ class Graph:
             entity = self.entities.get(other)
             edge["entity"] = entity
             edge["edge_direction"] = "outgoing" if edge["source"] == entity_id else "incoming"
-        return edges
+        return [edge for edge in edges if edge.get("entity")]
 
     def edges_for_kind(self, limit: int = 500) -> list[dict]:
         rows = self.db.query("SELECT * FROM edges ORDER BY created_at DESC LIMIT ?",
@@ -66,6 +69,8 @@ class Graph:
 
     def path(self, start: str, goal: str, max_depth: int = 4) -> list[str] | None:
         """Breadth-first path between two entities (used by 'why is this related?')."""
+        if not self.entities.get(start) or not self.entities.get(goal):
+            return None
         if start == goal:
             return [start]
         visited, frontier = {start}, [(start, [start])]
@@ -75,7 +80,7 @@ class Graph:
                 sql, args = self._neighbor_sql(node, None, "both")
                 for edge in self.db.query(sql, args):
                     nxt = edge["target"] if edge["source"] == node else edge["source"]
-                    if nxt in visited:
+                    if nxt in visited or not self.entities.get(nxt):
                         continue
                     if nxt == goal:
                         return trail + [nxt]

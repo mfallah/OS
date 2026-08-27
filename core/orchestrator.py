@@ -86,7 +86,9 @@ class Orchestrator:
             approval = self.permissions.request_approval(
                 f"orchestrator:{intent['intent']}", risk=policy["risk"],
                 permission=policy["permission"], reason=policy["reason"],
-                payload={"message": message[:300], "agent": agent.get("name")},
+                payload={"approval_kind": "orchestrator", "reference": intent["intent"],
+                         "message": message[:300], "focal_entity": focal_entity,
+                         "agent": agent.get("name")},
                 context={"intent": intent})
             return {"status": "approval_required", "plan": plan, "policy": policy,
                     "approval": approval, "answer":

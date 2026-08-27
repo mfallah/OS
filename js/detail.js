@@ -149,7 +149,7 @@ async function renderDetail(card, entity, onChange) {
   $('[data-delete]', card).addEventListener('click', async () => {
     const yes = await confirmDialog({
       title: `Delete “${title(entity)}”?`,
-      body: 'Soft-deleted with an audit record and an event. Graph links are removed. This is recoverable from the audit trail, not the UI.',
+      body: 'Soft-deleted with an event. Graph links are kept dormant so a future restore can recover them. Restore is available through the data API.',
       confirmLabel: 'Delete', danger: true,
     });
     if (!yes) { openEntity(entity.id, { onChange }); return; }
